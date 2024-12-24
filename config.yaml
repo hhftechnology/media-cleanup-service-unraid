@@ -1,0 +1,29 @@
+# Sonarr configuration (optional - remove entire section to disable Sonarr)
+sonarr:
+  api_key: "your_sonarr_api_key"
+  host: "http://localhost:8989"
+
+# Plex configuration (optional - remove entire section to disable Plex)
+plex:
+  url: "http://localhost:32400"
+  token: "your_plex_token"
+
+# General cleanup settings
+cleanup:
+  days_threshold: 30             # Number of days after which to delete episodes
+  media_root: "/mnt/user/data/media/tv"  # Root directory for TV shows
+  delete_empty_dirs: true        # Whether to remove empty directories after cleanup
+  dry_run: false                # Set to true to test without making changes
+
+# Performance tuning
+performance:
+  parallel_processing: true     # Enable parallel processing of episodes
+  max_workers: 4               # Maximum number of parallel workers
+
+# Example configurations:
+
+# For Sonarr-only usage, remove the 'plex' section above
+
+# For Plex-only usage, remove the 'sonarr' section above
+
+# For both services, keep both sections as shown
