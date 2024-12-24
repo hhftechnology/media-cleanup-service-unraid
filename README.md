@@ -1,4 +1,44 @@
-Let's create a docker-compose file to make it easier to run the container:
+# Media Cleanup Service for Unraid: A Complete Guide
+
+Are you tired of managing storage space for your daily TV shows? Do you find yourself regularly having to clean up old episodes manually? The Media Cleanup Service container is here to help! This guide will walk you through setting up and using the service on your Unraid server, with various configuration scenarios to match your needs.
+
+## ⚠️ IMPORTANT SAFETY WARNINGS
+
+Before proceeding with the installation and use of this service, please read and understand these critical warnings:
+
+1. **Data Loss Risk**: This service is designed to permanently delete media files. Once files are deleted, they CANNOT be recovered unless you have backups. The deletion is immediate and bypasses the recycle bin.
+
+2. **No Built-in Recovery**: The service does not include any file recovery capabilities. Deleted files are permanently removed from your system.
+
+3. **Verification Required**: Always run the service in dry-run mode first (`dry_run: true` in config) to verify what would be deleted before enabling actual deletions.
+
+4. **Backup Critical**: Maintain regular backups of your important media files. This service should not be your only method of media management.
+
+5. **Permission Issues**: Incorrect permissions can lead to unintended file access or failed deletions. Always verify PUID/PGID settings.
+
+6. **Network Dependencies**: Service relies on network access to Plex/Sonarr. Network issues could cause synchronization problems.
+
+7. **API Token Security**: Your Plex and Sonarr API tokens provide full access to these services. Keep them secure and never share configurations containing these tokens.
+
+### Required Safety Precautions
+
+Before running this service:
+
+1. **Create Backups**: Set up a backup system for critical media files.
+2. **Test in Isolation**: First test the service with a small, non-critical media collection.
+3. **Verify Settings**: Double-check all paths and configuration settings.
+4. **Monitor Logs**: Regularly check logs for unexpected behavior.
+5. **Set Notifications**: Configure Unraid notifications to alert you of any issues.
+
+### Recommended Safety Settings
+
+```yaml
+cleanup:
+  dry_run: true  # Start with dry run enabled
+  safety_threshold: 1000  # Maximum files to process in one run
+  backup_enabled: true   # Enable backup checks
+  notification_enabled: true  # Enable notifications
+```
 
 # Media Cleanup Service
 
