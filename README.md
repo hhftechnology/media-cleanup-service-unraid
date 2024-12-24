@@ -1,5 +1,7 @@
 # Media Cleanup Service for Unraid: A Complete Guide
 
+[![Docker Image CI/CD](https://github.com/hhftechnology/media-cleanup-service-unraid/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/hhftechnology/media-cleanup-service-unraid/actions/workflows/main.yml)
+
 Are you tired of managing storage space for your daily TV shows? Do you find yourself regularly having to clean up old episodes manually? The Media Cleanup Service container is here to help! This guide will walk you through setting up and using the service on your Unraid server, with various configuration scenarios to match your needs.
 
 ## ⚠️ IMPORTANT SAFETY WARNINGS
