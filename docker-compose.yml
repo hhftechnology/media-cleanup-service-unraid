@@ -1,0 +1,187 @@
+# Basic configuration for single instance
+version: '3.8'
+
+services:
+  # Basic setup with essential configurations
+  media-cleanup-basic:
+    image: hhftechnology/media-cleanup-service-unraid:latest
+    container_name: media-cleanup-basic
+    environment:
+      - PUID=99                     # User ID to run the service
+      - PGID=100                    # Group ID to run the service
+      - TZ=America/New_York         # Your timezone
+    volumes:
+      - /mnt/user/appdata/media-cleanup:/config  # Configuration directory
+      - /mnt/user/media:/data:ro               # Media directory (read-only)
+    restart: unless-stopped
+    networks:
+      - media-network
+
+# Advanced configuration with multiple instances and monitoring
+version: '3.8'
+
+services:
+  # Instance for daily news shows (2-day retention)
+  media-cleanup-news:
+    image: hhftechnology/media-cleanup-service-unraid:latest
+    container_name: media-cleanup-news
+    environment:
+      - PUID=99
+      - PGID=100
+      - TZ=America/New_York
+      - CONFIG_NAME=news            # Specify which config to use
+      - RETENTION_DAYS=2            # Override retention period
+      - DRY_RUN=false              # Enable actual deletions
+    volumes:
+      - /mnt/user/appdata/media-cleanup/news:/config
+      - /mnt/user/media/tv/news:/data:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8989/api/v3/system/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - media-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
+
+  # Instance for sports content (7-day retention)
+  media-cleanup-sports:
+    image: hhftechnology/media-cleanup-service-unraid:latest
+    container_name: media-cleanup-sports
+    environment:
+      - PUID=99
+      - PGID=100
+      - TZ=America/New_York
+      - CONFIG_NAME=sports
+      - RETENTION_DAYS=7
+      - DRY_RUN=false
+    volumes:
+      - /mnt/user/appdata/media-cleanup/sports:/config
+      - /mnt/user/media/tv/sports:/data:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8989/api/v3/system/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - media-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 128M
+
+  # Monitoring container for both instances
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: media-cleanup-prometheus
+    volumes:
+      - /mnt/user/appdata/prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - "9090:9090"
+    networks:
+      - media-network
+
+  # Visualization for monitoring
+  grafana:
+    image: grafana/grafana:latest
+    container_name: media-cleanup-grafana
+    volumes:
+      - /mnt/user/appdata/grafana:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=your_secure_password
+    ports:
+      - "3000:3000"
+    networks:
+      - media-network
+    depends_on:
+      - prometheus
+
+# High-availability configuration with backup service
+version: '3.8'
+
+services:
+  # Primary cleanup service
+  media-cleanup-primary:
+    image: hhftechnology/media-cleanup-service-unraid:latest
+    container_name: media-cleanup-primary
+    environment:
+      - PUID=99
+      - PGID=100
+      - TZ=America/New_York
+      - ROLE=primary
+      - BACKUP_ENABLED=true
+    volumes:
+      - /mnt/user/appdata/media-cleanup:/config
+      - /mnt/user/media:/data:ro
+      - /mnt/user/backups/media-cleanup:/backups
+    restart: unless-stopped
+    networks:
+      - media-network
+    deploy:
+      placement:
+        constraints:
+          - node.labels.media-service == primary
+
+  # Backup service that monitors primary
+  media-cleanup-backup:
+    image: hhftechnology/media-cleanup-service-unraid:latest
+    container_name: media-cleanup-backup
+    environment:
+      - PUID=99
+      - PGID=100
+      - TZ=America/New_York
+      - ROLE=backup
+      - PRIMARY_HOST=media-cleanup-primary
+    volumes:
+      - /mnt/user/appdata/media-cleanup:/config:ro
+      - /mnt/user/media:/data:ro
+    restart: unless-stopped
+    depends_on:
+      - media-cleanup-primary
+    networks:
+      - media-network
+    deploy:
+      placement:
+        constraints:
+          - node.labels.media-service == backup
+
+  # Automatic backup service
+  backup-service:
+    image: offen/docker-volume-backup:latest
+    container_name: media-cleanup-backup-service
+    environment:
+      - BACKUP_CRON_EXPRESSION=0 0 * * *  # Daily backup at midnight
+      - BACKUP_FILENAME=media-cleanup-backup-%Y-%m-%d
+      - BACKUP_RETENTION_DAYS=7
+    volumes:
+      - /mnt/user/appdata/media-cleanup:/backup/config:ro
+      - /mnt/user/backups/media-cleanup:/archive
+    networks:
+      - media-network
+
+volumes:
+  prometheus_data:
+
+networks:
+  media-network:
+    name: media-network
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.20.0.0/16
